@@ -1,0 +1,25 @@
+apply plugin: "java"
+
+sourceCompatibility = 1.6
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+compile "com.badlogicgames.gdx:gdx-freetype"
+
+sourceSets.main.java.srcDirs = [ "src/" ]
+
+
+eclipse.project {
+    name = appName + "-core"
+}
+
+allProjects {
+    // ...
+    repositories {
+        mavenCentral() // releases
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' } // snapshots
+    }
+    ext {
+        // ...
+        gdxUtilsVersion = '0.13.3'
+    }
+}
+

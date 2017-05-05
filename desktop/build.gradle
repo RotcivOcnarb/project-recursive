@@ -1,0 +1,87 @@
+apply plugin: "java"
+
+sourceCompatibility = 1.6
+sourceSets.main.java.srcDirs = [ "src/" ]
+
+project.ext.mainClassName = "com.digitalmatrix.pack.recursive.desktop.DesktopLauncher"
+project.ext.assetsDir = new File("../core/assets");
+
+task run(dependsOn: classes, type: JavaExec) {
+    main = project.mainClassName
+    classpath = sourceSets.main.runtimeClasspath
+    standardInput = System.in
+    workingDir = project.assetsDir
+    ignoreExitValue = true
+}
+
+task dist(type: Jar) {
+    from files(sourceSets.main.output.classesDir)
+    from files(sourceSets.main.output.resourcesDir)
+    from {configurations.compile.collect {zipTree(it)}}
+    from files(project.assetsDir);
+ 
+    manifest {
+        attributes 'Main-Class': project.mainClassName
+    }
+}
+
+dist.dependsOn classes
+
+eclipse {
+    project {
+        name = appName + "-desktop"
+        linkedResource name: 'assets', type: '2', location: 'PARENT-1-PROJECT_LOC/core/assets'
+    }
+}
+
+task afterEclipseImport(description: "Post processing after project generation", group: "IDE") {
+  doLast {
+    def classpath = new XmlParser().parse(file(".classpath"))
+    new Node(classpath, "classpathentry", [ kind: 'src', path: 'assets' ]);
+    def writer = new FileWriter(file(".classpath"))
+    def printer = new XmlNodePrinter(new PrintWriter(writer))
+    printer.setPreserveWhitespace(true)
+    printer.print(classpath)
+  }
+}
+
+allProjects {
+    // ...
+    repositories {
+        mavenCentral() // releases
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' } // snapshots
+    }
+    ext {
+        // ...
+        gdxUtilsVersion = '0.13.3'
+    }
+}
+
+//Configuration for the :desktop project
+project(":desktop") {
+    //Uses the java plugin (provides compiling, execution, etc.).
+    //That one is bundled with gradle, so we didn’t have to define it in the buildscript section.
+    apply plugin: "java"
+
+    //Defines dependencies for the :desktop project
+    dependencies {
+        //Adds dependency on the :core project as well as the gdx lwjgl backend and native dependencies
+        compile project(":core")
+        compile "com.badlogicgames.gdx:gdx-backend-lwjgl:$gdxVersion"
+        compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+        compile "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
+    }
+}
+
+//Configuration for the :core project
+project(":core") {
+    //Uses the java gradle plugin
+    apply plugin: "java"
+
+    dependencies {
+        //Defines dependencies for the :core project, in this example the gdx dependency
+        compile "com.badlogicgames.gdx:gdx:$gdxVersion"
+        compile "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+    }
+}
+
